@@ -33,6 +33,216 @@ import anime from 'animejs'
 import { WalletConfig, ComponentType } from '@/lib/types'
 import { DraggableBlock } from './DraggableBlock'
 
+// Generate React code with all config options
+function generateReactCode(config: WalletConfig): string {
+  const logoConfig = config.customLogoEnabled && config.customLogo ? {
+    enabled: true,
+    image: config.customLogo,
+    replaceTitle: config.customLogoReplaceTitle,
+    size: config.logoSize,
+    customSize: config.logoCustomSize,
+    width: config.logoWidth,
+    height: config.logoHeight,
+    maintainAspectRatio: config.logoMaintainAspectRatio,
+    position: {
+      horizontal: config.logoPositionHorizontal,
+      vertical: config.logoPositionVertical,
+    },
+    spacing: {
+      top: config.logoSpacingTop,
+      bottom: config.logoSpacingBottom,
+      left: config.logoSpacingLeft,
+      right: config.logoSpacingRight,
+    },
+    opacity: config.logoOpacity,
+    borderRadius: config.logoBorderRadius,
+    shadow: config.logoShadowEnabled ? {
+      enabled: true,
+      color: config.logoShadowColor,
+      blur: config.logoShadowBlur,
+      offsetX: config.logoShadowOffsetX,
+      offsetY: config.logoShadowOffsetY,
+    } : { enabled: false },
+    header: {
+      height: config.logoHeaderHeight,
+      backgroundColor: config.logoHeaderBackgroundColor,
+      padding: {
+        horizontal: config.logoHeaderPaddingHorizontal,
+        vertical: config.logoHeaderPaddingVertical,
+      },
+      border: config.logoHeaderBorderEnabled ? {
+        enabled: true,
+        color: config.logoHeaderBorderColor,
+        width: config.logoHeaderBorderWidth,
+      } : { enabled: false },
+    },
+    responsive: {
+      mobile: config.logoResponsiveMobile,
+      tablet: config.logoResponsiveTablet,
+      desktop: config.logoResponsiveDesktop,
+    },
+    animation: config.logoAnimation,
+  } : null
+
+  return `<SmartWalletAuth
+  email={${config.email}}
+  sms={${config.sms}}
+  social={${config.social}}
+  passkey={${config.passkey}}
+  external={${config.external}}
+  wallets={{
+    smartAccount: "${config.accountType}",
+    external: ${config.external},
+    providers: ["smartWallet", "metamask", "coinbase"]
+  }}
+  networks={[${config.networks.map((n) => `"${n.toLowerCase()}"`).join(', ')}]}
+  branding={{
+    theme: "${config.theme}",
+    primaryColor: "${config.primaryColor}",
+    cornerRadius: ${config.cornerRadius},
+    fontFamily: "${config.fontFamily}"
+  }}
+  componentOrder={[${config.componentOrder.map((c) => `"${c}"`).join(', ')}]}
+  accountConfig={{
+    accountType: "${config.accountType}",
+    entryPoint: "${config.entryPoint}",
+    paymaster: ${config.paymaster}
+  }}
+  sessionConfig={{
+    persistence: "${config.persistence}",
+    duration: "${config.duration}",
+    spendingLimit: {
+      enabled: ${config.limits},
+      amount: ${config.spendingLimit},
+      currency: "${config.spendingLimitCurrency}"
+    }
+  }}
+  ${logoConfig ? `logo={${JSON.stringify(logoConfig, null, 2)}}` : ''}
+/>`
+}
+
+// React Code Preview Component
+function ReactCodePreview({ config }: { config: WalletConfig }) {
+  const code = generateReactCode(config)
+  const lines = code.split('\n')
+  
+  return (
+    <pre>
+      <code>
+        {lines.map((line, index) => {
+          if (line.trim() === '') return <br key={index} />
+          
+          // Syntax highlighting
+          const parts: JSX.Element[] = []
+          let remaining = line
+          let keyIndex = 0
+          
+          // Match JSX tags
+          const tagMatch = remaining.match(/^(\s*)(&lt;[\w]+|&lt;\/[\w]+|&gt;)/)
+          if (tagMatch) {
+            parts.push(
+              <span key={keyIndex++} className="text-gray-500">{tagMatch[1]}</span>,
+              <span key={keyIndex++} className="token-tag">{tagMatch[2]}</span>
+            )
+            remaining = remaining.slice(tagMatch[0].length)
+          }
+          
+          // Match attributes
+          const attrMatch = remaining.match(/(\w+)=/)
+          if (attrMatch) {
+            const before = remaining.slice(0, attrMatch.index)
+            if (before) parts.push(<span key={keyIndex++}>{before}</span>)
+            parts.push(
+              <span key={keyIndex++} className="token-attr">{attrMatch[1]}</span>,
+              <span key={keyIndex++}>=</span>
+            )
+            remaining = remaining.slice((attrMatch.index || 0) + attrMatch[0].length)
+          }
+          
+          // Match strings
+          const stringMatch = remaining.match(/(["'][^"']*["'])/)
+          if (stringMatch) {
+            const before = remaining.slice(0, stringMatch.index)
+            if (before) parts.push(<span key={keyIndex++}>{before}</span>)
+            parts.push(
+              <span key={keyIndex++} className="token-string">{stringMatch[1]}</span>
+            )
+            remaining = remaining.slice((stringMatch.index || 0) + stringMatch[0].length)
+          }
+          
+          // Match booleans
+          const boolMatch = remaining.match(/(true|false)/)
+          if (boolMatch) {
+            const before = remaining.slice(0, boolMatch.index)
+            if (before) parts.push(<span key={keyIndex++}>{before}</span>)
+            parts.push(
+              <span key={keyIndex++} className="token-boolean">{boolMatch[1]}</span>
+            )
+            remaining = remaining.slice((boolMatch.index || 0) + boolMatch[0].length)
+          }
+          
+          // Match numbers
+          const numMatch = remaining.match(/(\d+)/)
+          if (numMatch) {
+            const before = remaining.slice(0, numMatch.index)
+            if (before) parts.push(<span key={keyIndex++}>{before}</span>)
+            parts.push(
+              <span key={keyIndex++} className="token-number">{numMatch[1]}</span>
+            )
+            remaining = remaining.slice((numMatch.index || 0) + numMatch[0].length)
+          }
+          
+          if (remaining) parts.push(<span key={keyIndex++}>{remaining}</span>)
+          
+          return (
+            <div key={index}>
+              {parts.length > 0 ? parts : <span>{line}</span>}
+            </div>
+          )
+        })}
+      </code>
+    </pre>
+  )
+}
+
+// JSON Code Preview Component
+function JSONCodePreview({ config }: { config: WalletConfig }) {
+  const jsonString = JSON.stringify(config, null, 2)
+  const lines = jsonString.split('\n')
+  
+  return (
+    <pre>
+      <code>
+        {lines.map((line, index) => {
+          if (line.trim() === '') return <br key={index} />
+          
+          // Simple JSON syntax highlighting
+          if (line.match(/^\s*"[^"]+":/)) {
+            const [key, ...valueParts] = line.split(':')
+            const value = valueParts.join(':')
+            return (
+              <div key={index}>
+                <span className="token-key">{key}</span>:
+                <span className="token-string">{value}</span>
+              </div>
+            )
+          }
+          
+          if (line.match(/^\s*(true|false|null|\d+)/)) {
+            return (
+              <div key={index}>
+                <span className="token-boolean">{line}</span>
+              </div>
+            )
+          }
+          
+          return <div key={index}>{line}</div>
+        })}
+      </code>
+    </pre>
+  )
+}
+
 interface PreviewProps {
   config: WalletConfig
   onConfigChange: (updates: Partial<WalletConfig>) => void
@@ -41,6 +251,7 @@ interface PreviewProps {
 
 export function Preview({ config, onConfigChange, onToast }: PreviewProps) {
   const [showCode, setShowCode] = useState(false)
+  const [codeView, setCodeView] = useState<'react' | 'json'>('react')
   const previewFrameRef = useRef<HTMLDivElement>(null)
   const codePreviewRef = useRef<HTMLDivElement>(null)
   const uiPreviewRef = useRef<HTMLDivElement>(null)
@@ -546,17 +757,92 @@ export function Preview({ config, onConfigChange, onToast }: PreviewProps) {
                 config.device === 'mobile' ? 'p-4' : 'p-6'
               }`}>
                 <div className="flex-1 flex flex-col items-center justify-start min-w-0">
-                  <div className={`text-center mb-6 w-full ${maxWidths[config.device]} flex-shrink-0`}>
-                    {config.customLogoEnabled && config.customLogo && (
-                      <div className="mb-4 flex justify-center">
-                        <img 
-                          src={config.customLogo} 
-                          alt="Logo" 
-                          className="max-h-12 w-auto object-contain"
-                          style={{ maxWidth: '200px' }}
+                  {/* Logo Header Section */}
+                  {config.customLogoEnabled && config.customLogo && (
+                    <div
+                      className="w-full flex-shrink-0"
+                      style={{
+                        minHeight: `${config.logoHeaderHeight}px`,
+                        backgroundColor: config.logoHeaderBackgroundColor === 'transparent' ? 'transparent' : config.logoHeaderBackgroundColor,
+                        paddingLeft: `${config.logoHeaderPaddingHorizontal}px`,
+                        paddingRight: `${config.logoHeaderPaddingHorizontal}px`,
+                        paddingTop: `${config.logoHeaderPaddingVertical}px`,
+                        paddingBottom: `${config.logoHeaderPaddingVertical}px`,
+                        borderBottom: config.logoHeaderBorderEnabled
+                          ? `${config.logoHeaderBorderWidth}px solid ${config.logoHeaderBorderColor}`
+                          : 'none',
+                      }}
+                    >
+                      <div
+                        className="w-full"
+                        style={{
+                          display: 'flex',
+                          justifyContent:
+                            config.logoPositionHorizontal === 'left'
+                              ? 'flex-start'
+                              : config.logoPositionHorizontal === 'right'
+                              ? 'flex-end'
+                              : 'center',
+                          alignItems:
+                            config.logoPositionVertical === 'top'
+                              ? 'flex-start'
+                              : config.logoPositionVertical === 'bottom'
+                              ? 'flex-end'
+                              : 'center',
+                          marginTop: `${config.logoSpacingTop}px`,
+                          marginBottom: `${config.logoSpacingBottom}px`,
+                          marginLeft: `${config.logoSpacingLeft}px`,
+                          marginRight: `${config.logoSpacingRight}px`,
+                        }}
+                      >
+                        <img
+                          src={config.customLogo}
+                          alt="Logo"
+                          className="object-contain"
+                          style={{
+                            width: config.logoWidth ? `${config.logoWidth}px` : undefined,
+                            height: config.logoHeight
+                              ? `${config.logoHeight}px`
+                              : config.logoSize === 'small'
+                              ? '32px'
+                              : config.logoSize === 'medium'
+                              ? '48px'
+                              : config.logoSize === 'large'
+                              ? '64px'
+                              : config.logoSize === 'xlarge'
+                              ? '96px'
+                              : `${config.logoCustomSize}px`,
+                            maxWidth: config.logoWidth ? undefined : config.device === 'mobile'
+                              ? `${config.logoResponsiveMobile}px`
+                              : config.device === 'tablet'
+                              ? `${config.logoResponsiveTablet}px`
+                              : `${config.logoResponsiveDesktop}px`,
+                            maxHeight: config.logoHeight ? undefined : config.device === 'mobile'
+                              ? `${config.logoResponsiveMobile}px`
+                              : config.device === 'tablet'
+                              ? `${config.logoResponsiveTablet}px`
+                              : `${config.logoResponsiveDesktop}px`,
+                            opacity: config.logoOpacity / 100,
+                            borderRadius: `${config.logoBorderRadius}px`,
+                            boxShadow: config.logoShadowEnabled
+                              ? `${config.logoShadowOffsetX}px ${config.logoShadowOffsetY}px ${config.logoShadowBlur}px ${config.logoShadowColor}`
+                              : 'none',
+                            objectFit: config.logoMaintainAspectRatio ? 'contain' : 'fill',
+                            animation: config.logoAnimation === 'fade'
+                              ? 'fadeIn 0.5s ease-in'
+                              : config.logoAnimation === 'slide'
+                              ? 'slideIn 0.5s ease-out'
+                              : config.logoAnimation === 'scale'
+                              ? 'scaleIn 0.3s ease-out'
+                              : 'none',
+                          }}
                         />
                       </div>
-                    )}
+                    </div>
+                  )}
+
+                  {/* Title Section */}
+                  <div className={`text-center mb-6 w-full ${maxWidths[config.device]} flex-shrink-0 ${config.customLogoEnabled && config.customLogo && config.logoSpacingBottom > 0 ? 'mt-4' : ''}`}>
                     {(!config.customLogoEnabled || !config.customLogo || !config.customLogoReplaceTitle) && (
                       <>
                         <h1 className={`text-xl font-bold tracking-tight ${config.theme === 'light' ? 'text-gray-900' : 'text-white'}`}>Sign in</h1>
@@ -635,132 +921,49 @@ export function Preview({ config, onConfigChange, onToast }: PreviewProps) {
             <div className="bg-[#0F0F11] border border-white/10 rounded-xl overflow-hidden h-full flex flex-col shadow-2xl">
               <div className="flex items-center justify-between px-4 py-2 bg-[#1C1C1E] border-b border-white/5">
                 <div className="flex gap-4">
-                  <button className="text-xs font-medium text-white border-b-2 border-purple-500 pb-2 px-1">
+                  <button
+                    onClick={() => setCodeView('react')}
+                    className={`text-xs font-medium pb-2 px-1 transition-colors ${
+                      codeView === 'react'
+                        ? 'text-white border-b-2 border-purple-500'
+                        : 'text-gray-500 hover:text-white'
+                    }`}
+                  >
                     React
                   </button>
                   <button
-                    onClick={() => onToast('Switched to JSON View')}
-                    className="text-xs font-medium text-gray-500 hover:text-white pb-2 px-1 transition-colors"
+                    onClick={() => setCodeView('json')}
+                    className={`text-xs font-medium pb-2 px-1 transition-colors ${
+                      codeView === 'json'
+                        ? 'text-white border-b-2 border-purple-500'
+                        : 'text-gray-500 hover:text-white'
+                    }`}
                   >
                     Config JSON
                   </button>
                 </div>
                 <button
-                  onClick={() => {
-                    const reactCode = `<SmartWalletAuth
-  email={${config.email}}
-  sms={${config.sms}}
-  social={${config.social}}
-  passkey={${config.passkey}}
-  wallets={{
-    smartAccount: "eip7702",
-    external: ${config.external},
-    providers: ["smartWallet", "metamask", "coinbase"]
-  }}
-  networks={[${config.networks.map((n) => `"${n.toLowerCase()}"`).join(', ')}]}
-  branding={{
-    theme: "${config.theme}",
-    primaryColor: "${config.primaryColor}",
-    cornerRadius: "xl"
-  }}
-  componentOrder={[${config.componentOrder.map((c) => `"${c}"`).join(', ')}]}
-/>`
-                    navigator.clipboard.writeText(reactCode)
-                    onToast('Code Copied!')
+                  onClick={async () => {
+                    try {
+                      const code = codeView === 'react' ? generateReactCode(config) : JSON.stringify(config, null, 2)
+                      await navigator.clipboard.writeText(code)
+                      onToast(`${codeView === 'react' ? 'React' : 'JSON'} Code Copied!`)
+                    } catch (error) {
+                      onToast('Failed to copy code')
+                    }
                   }}
                   className="text-gray-500 hover:text-white transition-colors"
+                  aria-label="Copy code"
                 >
                   <Copy className="w-4 h-4" />
                 </button>
               </div>
-              <div className="flex-1 overflow-auto p-4 bg-[#0A0A0B] font-mono text-xs leading-relaxed">
-                <pre>
-                  <code>
-                    <span className="token-tag">&lt;SmartWalletAuth</span>
-                    <br />
-                    {'  '}
-                    <span className="token-attr">email</span>=
-                    <span className="token-boolean">{`{${config.email}}`}</span>
-                    <br />
-                    {'  '}
-                    <span className="token-attr">sms</span>=
-                    <span className="token-boolean">{`{${config.sms}}`}</span>
-                    <br />
-                    {'  '}
-                    <span className="token-attr">social</span>=
-                    <span className="token-boolean">{`{${config.social}}`}</span>
-                    <br />
-                    {'  '}
-                    <span className="token-attr">passkey</span>=
-                    <span className="token-boolean">{`{${config.passkey}}`}</span>
-                    <br />
-                    {'  '}
-                    <span className="token-attr">wallets</span>=
-                    <span className="token-boolean">{'{{'}</span>
-                    <br />
-                    {'    '}
-                    <span className="token-attr">smartAccount</span>:{' '}
-                    <span className="token-string">"eip7702"</span>,
-                    <br />
-                    {'    '}
-                    <span className="token-attr">external</span>:{' '}
-                    <span className="token-boolean">{config.external}</span>,
-                    <br />
-                    {'    '}
-                    <span className="token-attr">providers</span>:{' '}
-                    <span className="token-boolean">[</span>
-                    <span className="token-string">"smartWallet"</span>,{' '}
-                    <span className="token-string">"metamask"</span>,{' '}
-                    <span className="token-string">"coinbase"</span>
-                    <span className="token-boolean">]</span>
-                    <br />
-                    {'  '}
-                    <span className="token-boolean">{'}}'}</span>
-                    <br />
-                    {'  '}
-                    <span className="token-attr">networks</span>=
-                    <span className="token-boolean">{'{[}'}</span>
-                    {config.networks.map((n, i) => (
-                      <span key={n}>
-                        <span className="token-string">{`"${n.toLowerCase()}"`}</span>
-                        {i < config.networks.length - 1 && ', '}
-                      </span>
-                    ))}
-                    <span className="token-boolean">{']}'}</span>
-                    <br />
-                    {'  '}
-                    <span className="token-attr">branding</span>=
-                    <span className="token-boolean">{'{{'}</span>
-                    <br />
-                    {'    '}
-                    <span className="token-attr">theme</span>:{' '}
-                    <span className="token-string">{`"${config.theme}"`}</span>,
-                    <br />
-                    {'    '}
-                    <span className="token-attr">primaryColor</span>:{' '}
-                    <span className="token-string">{`"${config.primaryColor}"`}</span>,
-                    <br />
-                    {'    '}
-                    <span className="token-attr">cornerRadius</span>:{' '}
-                    <span className="token-string">"xl"</span>
-                    <br />
-                    {'  '}
-                    <span className="token-boolean">{'}}'}</span>
-                    <br />
-                    {'  '}
-                    <span className="token-attr">componentOrder</span>=
-                    <span className="token-boolean">{'{[}'}</span>
-                    {config.componentOrder.map((c, i) => (
-                      <span key={c}>
-                        <span className="token-string">{`"${c}"`}</span>
-                        {i < config.componentOrder.length - 1 && ', '}
-                      </span>
-                    ))}
-                    <span className="token-boolean">{']}'}</span>
-                    <br />
-                    <span className="token-tag">/&gt;</span>
-                  </code>
-                </pre>
+              <div className="flex-1 overflow-auto p-4 bg-[#0A0A0B] font-mono text-xs leading-relaxed custom-scrollbar">
+                {codeView === 'react' ? (
+                  <ReactCodePreview config={config} />
+                ) : (
+                  <JSONCodePreview config={config} />
+                )}
               </div>
             </div>
           </div>
