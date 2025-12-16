@@ -55,6 +55,13 @@ export function Preview({ config, onConfigChange, onToast }: PreviewProps) {
     useSensor(KeyboardSensor)
   )
 
+  const handleDragMove = (event: any) => {
+    // Restrict movement to vertical only by setting x delta to 0
+    if (event.delta) {
+      event.delta.x = 0
+    }
+  }
+
   const deviceWidths = {
     mobile: '360px',
     tablet: '500px',
@@ -561,6 +568,7 @@ export function Preview({ config, onConfigChange, onToast }: PreviewProps) {
                   <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}
+                    onDragMove={handleDragMove}
                     onDragEnd={handleDragEnd}
                   >
                     <SortableContext
