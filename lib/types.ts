@@ -32,6 +32,8 @@ export interface WalletConfig {
   cornerRadius: number
   fontFamily: FontFamily
   customLogo: string | null
+  customLogoEnabled: boolean
+  customLogoReplaceTitle: boolean
 }
 
 export type PresetType = 'full' | 'simple' | 'wallet'
