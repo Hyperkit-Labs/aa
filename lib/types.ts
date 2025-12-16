@@ -34,6 +34,36 @@ export interface WalletConfig {
   customLogo: string | null
   customLogoEnabled: boolean
   customLogoReplaceTitle: boolean
+  // Enhanced Logo Configuration
+  logoSize: 'small' | 'medium' | 'large' | 'xlarge' | 'custom'
+  logoCustomSize: number
+  logoWidth?: number
+  logoHeight?: number
+  logoMaintainAspectRatio: boolean
+  logoPositionHorizontal: 'left' | 'center' | 'right'
+  logoPositionVertical: 'top' | 'middle' | 'bottom'
+  logoSpacingTop: number
+  logoSpacingBottom: number
+  logoSpacingLeft: number
+  logoSpacingRight: number
+  logoOpacity: number
+  logoBorderRadius: number
+  logoShadowEnabled: boolean
+  logoShadowColor: string
+  logoShadowBlur: number
+  logoShadowOffsetX: number
+  logoShadowOffsetY: number
+  logoHeaderHeight: number
+  logoHeaderBackgroundColor: string
+  logoHeaderPaddingHorizontal: number
+  logoHeaderPaddingVertical: number
+  logoHeaderBorderEnabled: boolean
+  logoHeaderBorderColor: string
+  logoHeaderBorderWidth: number
+  logoResponsiveMobile: number
+  logoResponsiveTablet: number
+  logoResponsiveDesktop: number
+  logoAnimation: 'none' | 'fade' | 'slide' | 'scale'
 }
 
 export type PresetType = 'full' | 'simple' | 'wallet'
