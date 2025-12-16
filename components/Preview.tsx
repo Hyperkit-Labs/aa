@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo, memo } from 'react'
 import {
   DndContext,
   closestCenter,
@@ -47,7 +47,11 @@ export function Preview({ config, onConfigChange, onToast }: PreviewProps) {
   const prevDeviceRef = useRef(config.device)
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 3,
+      },
+    }),
     useSensor(KeyboardSensor)
   )
 
@@ -57,13 +61,29 @@ export function Preview({ config, onConfigChange, onToast }: PreviewProps) {
     desktop: '100%',
   }
 
-  const previewBlocks = {
+  const maxWidths = {
+    mobile: 'max-w-sm',
+    tablet: 'max-w-md',
+    desktop: 'max-w-lg',
+  }
+
+  const blockSpacing = {
+    mobile: 'space-y-3',
+    tablet: 'space-y-4',
+    desktop: 'space-y-5',
+  }
+
+  const previewBlocks = useMemo(() => ({
     email: config.email,
     sms: config.sms,
     social: config.social,
     passkey: config.passkey,
     external: config.external,
-  }
+  }), [config.email, config.sms, config.social, config.passkey, config.external])
+
+  const enabledComponents = useMemo(() => {
+    return config.componentOrder.filter(type => previewBlocks[type])
+  }, [config.componentOrder, previewBlocks])
 
   // Animate device change
   useEffect(() => {
@@ -125,8 +145,9 @@ export function Preview({ config, onConfigChange, onToast }: PreviewProps) {
     const dividerBg = isLight ? 'bg-gray-300' : 'bg-white/5'
     const dividerText = isLight ? 'bg-white text-gray-500' : 'bg-[#0F0F11] text-gray-500'
     const buttonSecondary = isLight ? 'bg-gray-100 border-gray-300 text-gray-900 hover:bg-gray-200' : 'bg-[#1C1C1E] border-white/10 text-white hover:bg-[#252528]'
-    const socialButton = isLight ? 'bg-gray-100 border-gray-300 hover:bg-gray-200' : 'bg-[#1C1C1E] border-white/10 hover:bg-white/10'
+    const socialButton = isLight ? 'bg-gray-100 border-gray-300 hover:bg-gray-200 hover:border-gray-400' : 'bg-[#1C1C1E] border-white/10 hover:bg-white/10 hover:border-white/20'
     const socialIcon = isLight ? 'text-gray-900' : 'text-white'
+    const walletButton = isLight ? 'bg-gray-50 border-gray-200 hover:bg-gray-100 hover:border-gray-300' : 'bg-[#1C1C1E] border-white/10 hover:bg-white/10 hover:border-white/20'
 
     switch (type) {
       case 'email':
@@ -162,10 +183,18 @@ export function Preview({ config, onConfigChange, onToast }: PreviewProps) {
                         })
                         onToast('Verification Email Sent')
                       }}
-                      className="w-full h-10 text-white text-xs font-semibold transition-colors"
+                      aria-label="Continue with email authentication"
+                      className="w-full h-10 text-white text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2"
                       style={{
                         backgroundColor: config.primaryColor,
                         borderRadius: `${config.cornerRadius}px`,
+                        '--tw-ring-color': config.primaryColor,
+                      } as React.CSSProperties}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          e.currentTarget.click()
+                        }
                       }}
                     >
                       Continue with Email
@@ -345,12 +374,13 @@ export function Preview({ config, onConfigChange, onToast }: PreviewProps) {
                   })
                   onToast('Smart Wallet Connecting...')
                 }}
-                className="aspect-square rounded-xl bg-[#1C1C1E] border border-white/10 flex flex-col items-center justify-center gap-1 hover:border-purple-500/50 hover:bg-purple-500/5 active:scale-95 transition-all group"
+                className={`aspect-square rounded-xl ${walletButton} border flex flex-col items-center justify-center gap-1 active:scale-95 transition-all group`}
+                style={{ borderRadius: `${config.cornerRadius}px` }}
               >
                 <div className="w-6 h-6 rounded-md bg-gradient-to-tr from-purple-500 to-indigo-500 flex items-center justify-center">
                   <Sparkles className="w-3 h-3 text-white" />
                 </div>
-                <span className="text-[8px] text-gray-400 group-hover:text-white">Smart</span>
+                <span className={`text-[8px] ${isLight ? 'text-gray-700 group-hover:text-gray-900' : 'text-gray-400 group-hover:text-white'}`}>Smart</span>
               </button>
               <button
                 onClick={(e) => {
@@ -362,12 +392,13 @@ export function Preview({ config, onConfigChange, onToast }: PreviewProps) {
                   })
                   onToast('MetaMask Connecting...')
                 }}
-                className="aspect-square rounded-xl bg-[#1C1C1E] border border-white/10 flex flex-col items-center justify-center gap-1 hover:border-white/30 hover:bg-white/5 active:scale-95 transition-all group"
+                className={`aspect-square rounded-xl ${walletButton} border flex flex-col items-center justify-center gap-1 active:scale-95 transition-all group`}
+                style={{ borderRadius: `${config.cornerRadius}px` }}
               >
-                <div className="w-6 h-6 rounded-md bg-[#2a2a2e] flex items-center justify-center text-orange-500">
+                <div className={`w-6 h-6 rounded-md flex items-center justify-center ${isLight ? 'bg-gray-200' : 'bg-[#2a2a2e]'} text-orange-500`}>
                   <Dog className="w-3 h-3" />
                 </div>
-                <span className="text-[8px] text-gray-400 group-hover:text-white">MetaMask</span>
+                <span className={`text-[8px] ${isLight ? 'text-gray-700 group-hover:text-gray-900' : 'text-gray-400 group-hover:text-white'}`}>MetaMask</span>
               </button>
               <button
                 onClick={(e) => {
@@ -379,12 +410,13 @@ export function Preview({ config, onConfigChange, onToast }: PreviewProps) {
                   })
                   onToast('Coinbase Connecting...')
                 }}
-                className="aspect-square rounded-xl bg-[#1C1C1E] border border-white/10 flex flex-col items-center justify-center gap-1 hover:border-white/30 hover:bg-white/5 active:scale-95 transition-all group"
+                className={`aspect-square rounded-xl ${walletButton} border flex flex-col items-center justify-center gap-1 active:scale-95 transition-all group`}
+                style={{ borderRadius: `${config.cornerRadius}px` }}
               >
                 <div className="w-6 h-6 rounded-md bg-blue-600 flex items-center justify-center text-white">
                   <div className="w-3 h-3 rounded-full border-2 border-white"></div>
                 </div>
-                <span className="text-[8px] text-gray-400 group-hover:text-white">Coinbase</span>
+                <span className={`text-[8px] ${isLight ? 'text-gray-700 group-hover:text-gray-900' : 'text-gray-400 group-hover:text-white'}`}>Coinbase</span>
               </button>
               <button
                 onClick={(e) => {
@@ -396,12 +428,13 @@ export function Preview({ config, onConfigChange, onToast }: PreviewProps) {
                   })
                   onToast('WalletConnect QR...')
                 }}
-                className="aspect-square rounded-xl bg-[#1C1C1E] border border-white/10 flex flex-col items-center justify-center gap-1 hover:border-white/30 hover:bg-white/5 active:scale-95 transition-all group"
+                className={`aspect-square rounded-xl ${walletButton} border flex flex-col items-center justify-center gap-1 active:scale-95 transition-all group`}
+                style={{ borderRadius: `${config.cornerRadius}px` }}
               >
                 <div className="w-6 h-6 rounded-md bg-blue-500 flex items-center justify-center text-white">
                   <QrCode className="w-3 h-3" />
                 </div>
-                <span className="text-[8px] text-gray-400 group-hover:text-white">QR</span>
+                <span className={`text-[8px] ${isLight ? 'text-gray-700 group-hover:text-gray-900' : 'text-gray-400 group-hover:text-white'}`}>QR</span>
               </button>
             </div>
           </div>
@@ -412,7 +445,6 @@ export function Preview({ config, onConfigChange, onToast }: PreviewProps) {
     }
   }
 
-  const enabledComponents = config.componentOrder.filter((type) => previewBlocks[type])
   const isLight = config.theme === 'light'
 
   return (
@@ -420,7 +452,7 @@ export function Preview({ config, onConfigChange, onToast }: PreviewProps) {
       <div className="absolute inset-0 bg-grid-pattern opacity-20 pointer-events-none"></div>
 
       {/* Preview Header */}
-      <div className="h-12 border-b border-white/5 flex items-center justify-between px-6 bg-[#030305]/80 backdrop-blur z-30">
+      <div className="h-12 border-b border-white/5 flex items-center justify-between px-3 sm:px-4 md:px-6 bg-[#030305]/80 backdrop-blur z-30">
         <div className="flex items-center bg-[#1C1C1E] rounded-md border border-white/10 p-0.5">
           <button
             onClick={() => onConfigChange({ device: 'mobile' })}
@@ -429,6 +461,7 @@ export function Preview({ config, onConfigChange, onToast }: PreviewProps) {
                 ? 'bg-white/10 text-white'
                 : 'text-gray-500 hover:text-white'
             }`}
+            aria-label="Mobile view"
           >
             <Smartphone className="w-3.5 h-3.5" />
           </button>
@@ -439,6 +472,7 @@ export function Preview({ config, onConfigChange, onToast }: PreviewProps) {
                 ? 'bg-white/10 text-white'
                 : 'text-gray-500 hover:text-white'
             }`}
+            aria-label="Tablet view"
           >
             <Tablet className="w-3.5 h-3.5" />
           </button>
@@ -449,13 +483,14 @@ export function Preview({ config, onConfigChange, onToast }: PreviewProps) {
                 ? 'bg-white/10 text-white'
                 : 'text-gray-500 hover:text-white'
             }`}
+            aria-label="Desktop view"
           >
             <Monitor className="w-3.5 h-3.5" />
           </button>
         </div>
 
-        <div className="flex items-center gap-3">
-          <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <span className="text-[9px] sm:text-[10px] text-gray-500 uppercase font-bold tracking-wider hidden sm:inline">
             Preview Mode
           </span>
           <label className="relative inline-flex items-center cursor-pointer">
@@ -465,7 +500,7 @@ export function Preview({ config, onConfigChange, onToast }: PreviewProps) {
               onChange={(e) => setShowCode(e.target.checked)}
               className="sr-only peer"
             />
-            <div className="w-24 h-7 bg-[#1C1C1E] border border-white/10 peer-focus:outline-none rounded-lg peer peer-checked:after:translate-x-full after:content-['Code'] peer-checked:after:content-['UI'] after:absolute after:top-[3px] after:left-[3px] after:bg-purple-600 after:text-white after:text-[10px] after:font-bold after:flex after:items-center after:justify-center after:border-transparent after:rounded-md after:h-5 after:w-11 after:transition-all text-[10px] font-medium text-gray-400 flex justify-between px-2.5 items-center select-none">
+            <div className="w-20 sm:w-24 h-6 sm:h-7 bg-[#1C1C1E] border border-white/10 peer-focus:outline-none rounded-lg peer peer-checked:after:translate-x-full after:content-['Code'] peer-checked:after:content-['UI'] after:absolute after:top-[2px] sm:after:top-[3px] after:left-[2px] sm:after:left-[3px] after:bg-purple-600 after:text-white after:text-[9px] sm:after:text-[10px] after:font-bold after:flex after:items-center after:justify-center after:border-transparent after:rounded-md after:h-4 sm:after:h-5 after:w-9 sm:after:w-11 after:transition-all text-[9px] sm:text-[10px] font-medium text-gray-400 flex justify-between px-2 sm:px-2.5 items-center select-none">
               <span>UI</span>
               <span>Code</span>
             </div>
@@ -474,13 +509,13 @@ export function Preview({ config, onConfigChange, onToast }: PreviewProps) {
       </div>
 
       {/* Content Area */}
-      <div className="flex-1 flex items-center justify-center p-8 overflow-y-auto relative">
+      <div className="flex-1 flex items-center justify-center p-4 sm:p-6 md:p-8 overflow-y-auto relative">
         {!showCode ? (
           /* UI Preview */
           <div ref={uiPreviewRef} className="relative">
             <div
               ref={previewFrameRef}
-              className={`${config.theme === 'light' ? 'bg-white border-gray-200' : 'bg-[#0F0F11] border-white/10'} border shadow-2xl overflow-hidden relative flex flex-col max-h-[700px]`}
+              className={`${config.theme === 'light' ? 'bg-white border-gray-200' : 'bg-[#0F0F11] border-white/10'} border shadow-2xl overflow-hidden relative flex flex-col max-h-[600px] sm:max-h-[650px] md:max-h-[700px]`}
               style={{
                 width: deviceWidths[config.device],
                 borderRadius: `${config.cornerRadius}px`,
@@ -500,34 +535,66 @@ export function Preview({ config, onConfigChange, onToast }: PreviewProps) {
               </div>
 
               {/* App Content */}
-              <div className="flex-1 p-6 pl-14 flex flex-col overflow-y-auto custom-scrollbar space-y-6">
-                <div className="text-center mb-2">
-                  <h1 className={`text-xl font-bold tracking-tight ${config.theme === 'light' ? 'text-gray-900' : 'text-white'}`}>Sign in</h1>
-                  <p className={`text-xs mt-1 ${config.theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>Welcome back to HyperDapp</p>
-                </div>
+              <div className={`flex-1 flex flex-col overflow-y-auto custom-scrollbar ${
+                config.device === 'mobile' ? 'p-4' : 'p-6'
+              }`}>
+                <div className="flex-1 flex flex-col items-center justify-start min-w-0">
+                  <div className={`text-center mb-6 w-full ${maxWidths[config.device]} flex-shrink-0`}>
+                    {config.customLogoEnabled && config.customLogo && (
+                      <div className="mb-4 flex justify-center">
+                        <img 
+                          src={config.customLogo} 
+                          alt="Logo" 
+                          className="max-h-12 w-auto object-contain"
+                          style={{ maxWidth: '200px' }}
+                        />
+                      </div>
+                    )}
+                    {(!config.customLogoEnabled || !config.customLogo || !config.customLogoReplaceTitle) && (
+                      <>
+                        <h1 className={`text-xl font-bold tracking-tight ${config.theme === 'light' ? 'text-gray-900' : 'text-white'}`}>Sign in</h1>
+                        <p className={`text-xs mt-1 ${config.theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>Welcome back to HyperDapp</p>
+                      </>
+                    )}
+                  </div>
 
-                <DndContext
-                  sensors={sensors}
-                  collisionDetection={closestCenter}
-                  onDragEnd={handleDragEnd}
-                >
-                  <SortableContext
-                    items={enabledComponents}
-                    strategy={verticalListSortingStrategy}
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
                   >
-                    <div className="space-y-6">
-                      {config.componentOrder.map((type) => (
-                        <DraggableBlock
-                          key={type}
-                          id={type}
-                          isEnabled={previewBlocks[type]}
-                        >
-                          {renderComponent(type)}
-                        </DraggableBlock>
-                      ))}
-                    </div>
-                  </SortableContext>
-                </DndContext>
+                    <SortableContext
+                      items={enabledComponents}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <div className={`w-full ${blockSpacing[config.device]} ${maxWidths[config.device]} flex-shrink-0 mx-auto`}>
+                        {config.componentOrder.map((type) => (
+                          <DraggableBlock
+                            key={type}
+                            id={type}
+                            isEnabled={previewBlocks[type]}
+                            primaryColor={config.primaryColor}
+                          >
+                            <div className={`
+                              rounded-lg transition-all
+                              ${config.theme === 'light' 
+                                ? 'bg-gray-50/50 border border-gray-200/50' 
+                                : 'bg-white/5 border border-white/5'
+                              }
+                              hover:border-opacity-30 hover:shadow-sm
+                            `}
+                            style={{
+                              borderRadius: `${config.cornerRadius}px`,
+                              padding: config.device === 'mobile' ? '12px' : config.device === 'tablet' ? '16px' : '20px',
+                            }}>
+                              {renderComponent(type)}
+                            </div>
+                          </DraggableBlock>
+                        ))}
+                      </div>
+                    </SortableContext>
+                  </DndContext>
+                </div>
               </div>
 
               {/* Footer */}
