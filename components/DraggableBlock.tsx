@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { GripVertical } from 'lucide-react'
@@ -9,9 +10,11 @@ interface DraggableBlockProps {
   id: ComponentType
   children: React.ReactNode
   isEnabled: boolean
+  primaryColor?: string
 }
 
-export function DraggableBlock({ id, children, isEnabled }: DraggableBlockProps) {
+export function DraggableBlock({ id, children, isEnabled, primaryColor = '#9333EA' }: DraggableBlockProps) {
+  const [isHovered, setIsHovered] = useState(false)
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id,
     disabled: !isEnabled,
@@ -23,29 +26,51 @@ export function DraggableBlock({ id, children, isEnabled }: DraggableBlockProps)
     opacity: isDragging ? 0.5 : 1,
   }
 
+  // Make the entire block draggable
+  const dragListeners = listeners
+
   if (!isEnabled) {
     return <div className="preview-block hidden-block">{children}</div>
+  }
+
+  // Convert hex to rgba for subtle highlight
+  const hexToRgba = (hex: string, alpha: number) => {
+    const r = parseInt(hex.slice(1, 3), 16)
+    const g = parseInt(hex.slice(3, 5), 16)
+    const b = parseInt(hex.slice(5, 7), 16)
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`
   }
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className="preview-block relative group"
+      className="preview-block relative group w-full"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
       <div
         {...attributes}
-        {...listeners}
-        className="absolute -left-10 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center cursor-grab active:cursor-grabbing opacity-60 group-hover:opacity-100 transition-opacity z-10 bg-[#1C1C1E] rounded border border-white/10 hover:border-purple-500/50 hover:bg-[#252528]"
+        className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-12 w-10 h-10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all z-30 bg-[#1C1C1E] rounded-lg border-2 border-purple-500/50 hover:border-purple-500/80 hover:bg-[#252528] hover:scale-110 shadow-xl pointer-events-none"
+        aria-label="Drag handle indicator"
       >
-        <GripVertical className="w-5 h-5 text-gray-400 group-hover:text-purple-400" />
+        <GripVertical className="w-5 h-5 text-purple-400" />
       </div>
       <div 
-        className="w-full relative"
+        {...attributes}
+        {...dragListeners}
+        className="w-full relative rounded-lg transition-all duration-200 cursor-grab active:cursor-grabbing select-none"
         style={{
-          borderLeft: isDragging ? '2px solid rgba(147, 51, 234, 0.3)' : '2px solid transparent',
-          backgroundColor: isDragging ? 'rgba(147, 51, 234, 0.05)' : 'transparent',
-          transition: 'all 0.2s ease',
+          borderLeft: isDragging 
+            ? `3px solid ${hexToRgba(primaryColor, 0.5)}` 
+            : isHovered 
+            ? `3px solid ${hexToRgba(primaryColor, 0.3)}` 
+            : '3px solid transparent',
+          backgroundColor: isDragging 
+            ? hexToRgba(primaryColor, 0.1) 
+            : isHovered 
+            ? hexToRgba(primaryColor, 0.05) 
+            : 'transparent',
         }}
       >
         {children}
